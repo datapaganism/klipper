@@ -134,6 +134,9 @@ class ZTilt:
         self.probe_helper.minimum_points(2)
         self.z_status = ZAdjustStatus(self.printer)
         self.z_helper = ZAdjustHelper(config, len(self.z_positions))
+        
+        self.z_max_adjust = config.getfloat("z_max_adjust", 0., above=0.)
+        
         # Register Z_TILT_ADJUST command
         gcode = self.printer.lookup_object('gcode')
         gcode.register_command('Z_TILT_ADJUST', self.cmd_Z_TILT_ADJUST,
@@ -160,6 +163,16 @@ class ZTilt:
             return total_error
         new_params = mathutil.coordinate_descent(
             params.keys(), params, errorfunc)
+        
+        if self.z_max_adjust != 0.0:
+            if new_params['z_adjust'] <= -self.z_max_adjust:
+                logging.info("bed tilt larger than max adjust: %s becoming -> %s", new_params['z_adjust'], -self.z_max_adjust)
+                new_params['z_adjust'] = -self.z_max_adjust
+
+            elif new_params['z_adjust'] >= self.z_max_adjust:
+                logging.info("bed tilt larger than max adjust: %s becoming -> %s", new_params['z_adjust'], self.z_max_adjust)
+                new_params['z_adjust'] = self.z_max_adjust
+
         # Apply results
         speed = self.probe_helper.get_lift_speed()
         logging.info("Calculated bed tilt parameters: %s", new_params)
