@@ -171,20 +171,17 @@ class ZTilt:
         y_adjust = new_params['y_adjust']
         z_adjust = (new_params['z_adjust'] - z_offset
                     - x_adjust * offsets[0] - y_adjust * offsets[1])
-        
-        if self.z_max_adjust != 0.0:
-            if z_adjust <= -self.z_max_adjust:
-                logging.info("bed tilt larger than max adjust: %s becoming -> %s", z_adjust, -self.z_max_adjust)
-                z_adjust = -self.z_max_adjust
-
-            elif z_adjust >= self.z_max_adjust:
-                logging.info("bed tilt larger than max adjust: %s becoming -> %s", z_adjust, self.z_max_adjust)
-                z_adjust = self.z_max_adjust
-
-
 
         adjustments = [x*x_adjust + y*y_adjust + z_adjust
                        for x, y in self.z_positions]
+
+        for i in range(len(adjustments)):
+           if self.z_max_adjust != 0.0: 
+                if adjustments[i] <= -self.z_max_adjust:
+                    adjustments[i] = -self.z_max_adjust
+                elif adjustments[i] >= self.z_max_adjust:
+                    adjustments[i] = self.z_max_adjust
+
         self.z_helper.adjust_steppers(adjustments, speed)
         return self.z_status.check_retry_result(
             self.retry_helper.check_retry([p[2] for p in positions]))
