@@ -164,15 +164,6 @@ class ZTilt:
         new_params = mathutil.coordinate_descent(
             params.keys(), params, errorfunc)
         
-        if self.z_max_adjust != 0.0:
-            if new_params['z_adjust'] <= -self.z_max_adjust:
-                logging.info("bed tilt larger than max adjust: %s becoming -> %s", new_params['z_adjust'], -self.z_max_adjust)
-                new_params['z_adjust'] = -self.z_max_adjust
-
-            elif new_params['z_adjust'] >= self.z_max_adjust:
-                logging.info("bed tilt larger than max adjust: %s becoming -> %s", new_params['z_adjust'], self.z_max_adjust)
-                new_params['z_adjust'] = self.z_max_adjust
-
         # Apply results
         speed = self.probe_helper.get_lift_speed()
         logging.info("Calculated bed tilt parameters: %s", new_params)
@@ -180,6 +171,18 @@ class ZTilt:
         y_adjust = new_params['y_adjust']
         z_adjust = (new_params['z_adjust'] - z_offset
                     - x_adjust * offsets[0] - y_adjust * offsets[1])
+        
+        if self.z_max_adjust != 0.0:
+            if z_adjust <= -self.z_max_adjust:
+                logging.info("bed tilt larger than max adjust: %s becoming -> %s", z_adjust, -self.z_max_adjust)
+                z_adjust = -self.z_max_adjust
+
+            elif z_adjust >= self.z_max_adjust:
+                logging.info("bed tilt larger than max adjust: %s becoming -> %s", z_adjust, self.z_max_adjust)
+                z_adjust = self.z_max_adjust
+
+
+
         adjustments = [x*x_adjust + y*y_adjust + z_adjust
                        for x, y in self.z_positions]
         self.z_helper.adjust_steppers(adjustments, speed)
